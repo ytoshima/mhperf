@@ -5,6 +5,40 @@ import java.lang.invoke.*;
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.*;
 
+/*
+
+An experiment of SwitchPoint.
+
+In main, a custum call site is created and constantFallback + call site argument
+is set to its target.  
+
+When the call site's target was called for the first time, constantFallback
+creates a constant MethodHandle.  It then creates a SwitchPoint which takes
+the constant method handle and the constantFallback method handle.
+
+Until the switch point is invalidated, the call site target call would invoke
+the constant method handle.  After the switch point invalidation, constantFallback
+is called and setup a constant method handle with current value and setup
+SwichPoint again.  Following call would return the new constant value.
+
+In this way, the constant can be obtained quickly, without polling the change.
+
+Sample output:
+
+D: set value to Foo
+D: In constantFallback value=IRubyObject{Foo}
+D: callsite invoke 1: IRubyObject{Foo}
+D: callsite invoke 2: IRubyObject{Foo}
+D: callsite invoke 3: IRubyObject{Foo}
+D: invalidated
+D: set value to Bar
+D: In constantFallback value=IRubyObject{Bar}
+D: callsite invoke 4: IRubyObject{Bar}
+D: callsite invoke 5: IRubyObject{Bar}
+D: callsite invoke 6: IRubyObject{Bar}
+
+*/
+
 
 public class SwitchPointEx {
   public static void main(String... args) throws Throwable {
