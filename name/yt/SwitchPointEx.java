@@ -26,16 +26,16 @@ In this way, the constant can be obtained quickly, without polling the change.
 Sample output:
 
 D: set value to Foo
-D: In constantFallback value=IRubyObject{Foo}
-D: callsite invoke 1: IRubyObject{Foo}
-D: callsite invoke 2: IRubyObject{Foo}
-D: callsite invoke 3: IRubyObject{Foo}
+D: In constantFallback value=IAmethystObject{Foo}
+D: callsite invoke 1: IAmethystObject{Foo}
+D: callsite invoke 2: IAmethystObject{Foo}
+D: callsite invoke 3: IAmethystObject{Foo}
 D: invalidated
 D: set value to Bar
-D: In constantFallback value=IRubyObject{Bar}
-D: callsite invoke 4: IRubyObject{Bar}
-D: callsite invoke 5: IRubyObject{Bar}
-D: callsite invoke 6: IRubyObject{Bar}
+D: In constantFallback value=IAmethystObject{Bar}
+D: callsite invoke 4: IAmethystObject{Bar}
+D: callsite invoke 5: IAmethystObject{Bar}
+D: callsite invoke 6: IAmethystObject{Bar}
 
 */
 
@@ -44,12 +44,12 @@ public class SwitchPointEx {
   public static void main(String... args) throws Throwable {
     MethodHandles.Lookup lookup = lookup();
     MethodType type = 
-        methodType(IRubyObject.class, ThreadContext.class);
-    RubyConstantCallSite site = new RubyConstantCallSite(type, "site1");
+        methodType(IAmethystObject.class, ThreadContext.class);
+    AmethystConstantCallSite site = new AmethystConstantCallSite(type, "site1");
     ThreadContext tc = new ThreadContext();
-    tc.setConstant("site1", new IRubyObject("Foo"));
+    tc.setConstant("site1", new IAmethystObject("Foo"));
     D("set value to Foo");
-    MethodType fallbackType = type.insertParameterTypes(0, RubyConstantCallSite.class);
+    MethodType fallbackType = type.insertParameterTypes(0, AmethystConstantCallSite.class);
     MethodHandle myFallback = insertArguments(
                 lookup.findStatic(SwitchPointEx.class, "constantFallback",
                 fallbackType),
@@ -57,38 +57,38 @@ public class SwitchPointEx {
                 site);
     site.setTarget(myFallback);
 
-    IRubyObject iro = null;
-    iro = (IRubyObject)site.getTarget().invokeExact(tc);
+    IAmethystObject iro = null;
+    iro = (IAmethystObject)site.getTarget().invokeExact(tc);
     D("callsite invoke 1: " + iro);
-    iro = (IRubyObject)site.getTarget().invokeExact(tc);
+    iro = (IAmethystObject)site.getTarget().invokeExact(tc);
     D("callsite invoke 2: " + iro);
-    iro = (IRubyObject)site.getTarget().invokeExact(tc);
+    iro = (IAmethystObject)site.getTarget().invokeExact(tc);
     D("callsite invoke 3: " + iro);
     tc.runtime.getConstantInvalidator().invalidate();
     D("invalidated");
-    tc.setConstant("site1", new IRubyObject("Bar"));
+    tc.setConstant("site1", new IAmethystObject("Bar"));
     D("set value to Bar");
-    iro = (IRubyObject)site.getTarget().invokeExact(tc);
+    iro = (IAmethystObject)site.getTarget().invokeExact(tc);
     D("callsite invoke 4: " + iro);
-    iro = (IRubyObject)site.getTarget().invokeExact(tc);
+    iro = (IAmethystObject)site.getTarget().invokeExact(tc);
     D("callsite invoke 5: " + iro);
-    iro = (IRubyObject)site.getTarget().invokeExact(tc);
+    iro = (IAmethystObject)site.getTarget().invokeExact(tc);
     D("callsite invoke 6: " + iro);
   }
 
-  public static IRubyObject constantFallback(RubyConstantCallSite site,
+  public static IAmethystObject constantFallback(AmethystConstantCallSite site,
       ThreadContext context) {
-    IRubyObject value = context.getConstant(site.name());
+    IAmethystObject value = context.getConstant(site.name());
   
     if (value != null) {
-      //if (RubyInstanceConfig.LOG_INDY_CONSTANTS) LOG.info("constant " + site.name() + " bound directly");
+      //if (AmethystInstanceConfig.LOG_INDY_CONSTANTS) LOG.info("constant " + site.name() + " bound directly");
       D("In constantFallback value=" + value); 
-      MethodHandle valueHandle = constant(IRubyObject.class, value);
+      MethodHandle valueHandle = constant(IAmethystObject.class, value);
       valueHandle = dropArguments(valueHandle, 0, ThreadContext.class);
 
       MethodHandle fallback = insertArguments(
           findStatic(SwitchPointEx.class, "constantFallback",
-          methodType(IRubyObject.class, RubyConstantCallSite.class, ThreadContext.class)),
+          methodType(IAmethystObject.class, AmethystConstantCallSite.class, ThreadContext.class)),
           0,
           site);
 
@@ -99,7 +99,7 @@ public class SwitchPointEx {
       D("In constantFallback value=null");
       //value = context.getCurrentScope().getStaticScope().getModule()
       //    .callMethod(context, "const_missing", context.getRuntime().fastNewSymbol(site.name()));
-      value = new IRubyObject("(null)");
+      value = new IAmethystObject("(null)");
     }
 
     return value;
@@ -119,19 +119,19 @@ public class SwitchPointEx {
   public static void D(Object o) { System.out.println("D: " + o); }
 }
 
-class IRubyObject {
+class IAmethystObject {
   private Object value;
-  public IRubyObject(Object value) { this.value = value; }
+  public IAmethystObject(Object value) { this.value = value; }
   public Object getValue() { return value; }
-  public String toString() { return "IRubyObject{"+value+"}";}
+  public String toString() { return "IAmethystObject{"+value+"}";}
 }
 
 class ThreadContext {
-  private ConcurrentHashMap<String,IRubyObject> map = new ConcurrentHashMap<>();
-  public IRubyObject getConstant(String key) {
+  private ConcurrentHashMap<String,IAmethystObject> map = new ConcurrentHashMap<>();
+  public IAmethystObject getConstant(String key) {
     return map.get(key);
   }
-  public void setConstant(String key, IRubyObject value) {
+  public void setConstant(String key, IAmethystObject value) {
     map.put(key, value);
   }
   MyRuntime runtime = new MyRuntime();
@@ -148,9 +148,9 @@ class MyRuntime {
   ConstantInvalidator getConstantInvalidator() { return constantInvalidator; } 
 }
 
-class RubyConstantCallSite extends MutableCallSite {
+class AmethystConstantCallSite extends MutableCallSite {
   private String name;
-  public RubyConstantCallSite(MethodType type, String name) {
+  public AmethystConstantCallSite(MethodType type, String name) {
     super(type);
     setName(name);
   }
